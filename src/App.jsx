@@ -173,12 +173,14 @@ const getUrl = (searchTerm, page) =>
 const extractSearchTerm = (url) => 
   url
     .substring(url.lastIndexOf('?') + 1, urlLastIndexOf('&')) 
-    .replace(PARAM_SEARCH, ''); //Next modift handleFetchStories
+    .replace(PARAM_SEARCH, ''); //The key (query=) also needs to 
+                //be replaced, leaving only the value (searchTerm):
+                //Next modify handleFetchStories
 
   const handleMore = () => {
-    const lastUrl = url[url.length - 1];
-    const searchTerm = extractSearchTerm(lastUrl);
+    const searchTerm = extractSearchTerm(url);
     handleSearch(searchTerm, stories.page + 1);
+    console.log("SearchTerm in HandleSearch = " + searchTerm);
   };
  
     
@@ -463,10 +465,7 @@ const App = () => {
   };  //EOF handleRemoveStory
 
  
-  const handleSearch = (searchTerm, page) => {
-    const url = getUrl(searchTerm, page);
-    setUrl(url.concat(url));
-  };
+ 
   //(BB) rename handler handleSearch to handleSearchInput
   ///renamed handler of the input field still sets 
   //the stateful searchTerm,
@@ -489,8 +488,12 @@ const App = () => {
   //which is setUrl(`${API_ENDPOINT}${searchTerm}`); the button receives
   //a new type attribute called submit which means the "onSubmit" handles
   //the click and not the button.
+
+  //orig
+  //const handleSearchSubmit = (event) => {
+  //  setUrl(`${API_ENDPOINT}${searchTerm}`);
+
   const handleSearchSubmit = (event) => {
-    //setUrl(`${API_ENDPOINT}${searchTerm}`);
     handleSearch(searchTerm, 0);
 
     //Next, since the handler is used for the form event, it 
@@ -500,6 +503,10 @@ const App = () => {
     event.preventDefault();
   };
 
+  const handleSearch = (searchTerm, page) => {
+    const url = getUrl(searchTerm, page);
+    setUrl(url);
+  };
   
    return (
     <div>

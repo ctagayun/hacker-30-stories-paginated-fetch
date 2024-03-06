@@ -178,7 +178,7 @@ const extractSearchTerm = (url) =>
                 //Next modify handleFetchStories
 
   const handleMore = () => {
-    const searchTerm = extractSearchTerm(url);
+    const searchTerm = extractSearchTerm(searchTerm);
     handleSearch(searchTerm, stories.page + 1);
     console.log("SearchTerm in HandleSearch = " + searchTerm);
   };
@@ -505,6 +505,7 @@ const App = () => {
 
   const handleSearch = (searchTerm, page) => {
     const url = getUrl(searchTerm, page);
+    console.log("Url in HandleSearch = " + url);
     setUrl(url);
   };
   
@@ -683,22 +684,22 @@ const List = ({ list, onRemoveItem }) => {
   return (
   <ul>
     <li style={{ display: 'flex' }}>
-      <span style={{ width: '40%' }}>Title
+      <span style={{ width: '40%' }}>
          <button type="button" onClick={() => handleSort('TITLE')}>
             Title
          </button>
       </span>
-      <span style={{ width: '30%' }}>Author
+      <span style={{ width: '30%' }}>
          <button type="button" onClick={() => handleSort('AUTHOR')}>
             Author
          </button>
       </span>
-      <span style={{ width: '10%' }}>Comments
+      <span style={{ width: '10%' }}>
           <button type="button" onClick={() => handleSort('COMMENT')}>
             Comments
           </button>
       </span>
-      <span style={{ width: '10%' }}>Points
+      <span style={{ width: '10%' }}>
           <button type="button" onClick={() => handleSort('POINT')}>
             Points
           </button>

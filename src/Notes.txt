@@ -1,5 +1,29 @@
-ha 
-  1. Stuff from Robin's course 
+  
+ What does a backtick do in JavaScript?
+   Backticks ( `` ) are used to enclose template literals. 
+ Hi, Sathira Nipun! Template literals allow you to embed 
+ expressions using ${expression} syntax, making string 
+ concatenation more readable and convenient. They also facilitate 
+ multiline strings.Jul 6, 2023  
+   Example:
+    //Code
+      const multiLineString = `
+      Hi, 
+      JS Beginners!!!
+      This is a
+      multiline
+      string.
+      `;
+      console.log(multiLineString);
+
+      //Output
+      Hi, 
+      JS Beginners!!!
+      This is a
+      multiline
+      string.
+
+ 1. Stuff from Robin's course 
       - instantiation of app.jsx happens in main.jsx. See p45
 
           Two libraries are imported: react and react.DOM.

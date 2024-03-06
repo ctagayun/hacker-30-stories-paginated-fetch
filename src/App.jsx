@@ -1,5 +1,22 @@
 /*================================================================
-Reverse Sorting:
+Task: 
+   - implement a pagination feature called "infinite pagination"
+
+     Instead of rendering a single paginated list on a button click,
+     we will render all paginated lists as one list with one button 
+     to fetch the next page. Every additional paginated list is 
+     concatenated at the end of the one list.
+  
+   - Extend the API_ENDPOINT with the parameters needed for the 
+     paginated fetch.
+   - Store the page from the result as state after fetching the data.
+   - Fetch the first page (0) of data with every search.
+   - Fetch the succeeding page (page + 1) for every additional request 
+     triggered with a new HTML button.
+
+
+==================================================================
+Previous: Reverse Sorting:
   - Consider that reverse or normal sort could be just another state 
     (e.g. isReverse) next to the sortKey.
 
@@ -132,8 +149,39 @@ import * as React from 'react';
 import axios from 'axios'
 import { sortBy } from 'lodash';
 
-const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
+//Step 1: Break this into 3 separate constants that we can use to 
+//compose the API_Endpoint
+//const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query=';
 
+const API_BASE = 'https://hn.algolia.com/api/v1';
+const API_SEARCH = '/search';
+const PARAM_SEARCH = 'query=';
+const PARAM_PAGE = 'page=';
+
+//Let us compose the the URL. 
+//Careful: notice the ? in between
+//Next adjust all getUrl invocations by passing the page argument
+const getUrl = (searchTerm, page) =>
+  `${API_BASE}${API_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}`;
+
+/*Step 2:
+   It's better to extract the search term by extracting everything 
+   between ? and &. Also consider that the query parameter is 
+   directly after the ? and all other parameters like page follow it:
+*/
+
+const extractSearchTerm = (url) => 
+  url
+    .substring(url.lastIndexOf('?') + 1, urlLastIndexOf('&')) 
+    .replace(PARAM_SEARCH, ''); //Next modift handleFetchStories
+
+  const handleMore = () => {
+    const lastUrl = url[url.length - 1];
+    const searchTerm = extractSearchTerm(lastUrl);
+    handleSearch(searchTerm, stories.page + 1);
+  };
+ 
+    
 /* No need for this because we will fetch data directly using the API
 const getAsyncStories = () =>
   new Promise((resolve) =>
@@ -192,7 +240,9 @@ const storiesReducer = (state, action) => {
         ...state,
         isLoading: false,
         isError: false,
-        data: action.payload,
+      //  data: action.payload - modified to handle paging
+        data: action.payload.list,
+        page: action.payload.page, //next go to modify React.useReducer()
       };
     case 'STORIES_FETCH_FAILURE':   //another distinct type and payload 
                                     //received by dispatchStories 
@@ -234,6 +284,9 @@ const useStorageState = (key, initialState) => {
   return [value, setValue];
 };
 
+/*
+   App Section
+*/
 const App = () => {
   const [searchTerm, setSearchTerm] = useStorageState(
     'search',
@@ -266,17 +319,21 @@ const App = () => {
    //useReducer hook for a unified state.
   const [stories, dispatchStories] = React.useReducer( //A
     storiesReducer,
-    { data: [], isLoading: false, isError: false } //We want an empty list data [] 
+    { data: [], page: 0, isLoading: false, isError: false } //We want an empty list data [] 
                                                    //for the initial state, set isloading=false
-                                                   //is error=false
+                                                   //is error=false. Add page: property
+                                                   //Next extend the API endpoint with the
+                                                   //new page parameter
   );
 
   //(DD) new handler of the button sets the new stateful value 
   //called 'url' which is derived from the current searchTerm and 
   //the static API endpoint as a new state:
-  const [url, setUrl] = React.useState(
-    `${API_ENDPOINT}${searchTerm}`
-  );
+  //const [url, setUrl] = React.useState(
+  //  `${API_ENDPOINT}${searchTerm}`
+  //);
+
+  const [url, setUrl] = React.useState([getUrl(searchTerm, 0)]); //next modify handleSearchSubmit
 
   /*   Memoized useEffect
     After merging the three useState hooks into one Reducer hook,
@@ -364,7 +421,12 @@ const App = () => {
  
       dispatchStories({
         type: 'STORIES_FETCH_SUCCESS',
-        payload: result.data.hits,
+       // payload: result.data.hits, - modified to handle paging
+        payload: {
+          list: result.data.hits,
+          page: result.data.page, //the API returns the page data
+                                  //Next go modify storiesReducer
+        },
       });
     } catch {
       dispatchStories({ type: 'STORIES_FETCH_FAILURE' });
@@ -401,7 +463,10 @@ const App = () => {
   };  //EOF handleRemoveStory
 
  
-
+  const handleSearch = (searchTerm, page) => {
+    const url = getUrl(searchTerm, page);
+    setUrl(url.concat(url));
+  };
   //(BB) rename handler handleSearch to handleSearchInput
   ///renamed handler of the input field still sets 
   //the stateful searchTerm,
@@ -425,8 +490,9 @@ const App = () => {
   //a new type attribute called submit which means the "onSubmit" handles
   //the click and not the button.
   const handleSearchSubmit = (event) => {
-    setUrl(`${API_ENDPOINT}${searchTerm}`);
- 
+    //setUrl(`${API_ENDPOINT}${searchTerm}`);
+    handleSearch(searchTerm, 0);
+
     //Next, since the handler is used for the form event, it 
     //executes preventDefault() additionally on React's
     //synthetic event. This prevents the HTML form's native 
@@ -477,6 +543,9 @@ const App = () => {
           onRemoveItem={handleRemoveStory}
         />
       )}
+      <button type="button" onClick={handleMore}>
+        More
+      </button>
     </div>
   );
 };

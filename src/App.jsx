@@ -194,22 +194,17 @@ const getUrl = (searchTerm, page) =>
             react      
 */
 
-const extractSearchTerm = (url) => 
-  url
+const extractSearchTerm = (url) => url
     .substring(url.lastIndexOf('?') + 1, urlLastIndexOf('&')) 
-    .replace(PARAM_SEARCH, ''); //The key (query=) also needs to 
-                //be replaced, leaving only the value (searchTerm):
-                //Next modify handleFetchStories to deliver us
-                //the page data:
-                //  page: result.data.page,
-
+    .replace(PARAM_SEARCH, '');  
+    
   //To fetch the next page when a button is clicked, 
   //we'll need to increment the page argument in this 
   //new handler:
   const handleMore = () => {
-    console.log("HandleMore url = " + url);
-    const searchTerm = extractSearchTerm(url);
-    console.log("HandleMore search term = " + searchTerm);
+    console.log("HandleMore url = " + currentUrl);
+    const searchTerm = extractSearchTerm(currentUrl);
+    console.log("HandleMore extracted search term = " + searchTerm);
     handleSearch(searchTerm, stories.page + 1);
     console.log("SearchTerm in HandleSearch = " + searchTerm);
   };
@@ -328,6 +323,7 @@ const useStorageState = (key, initialState) => {
 };
 
 let counter = 0;
+let currentUrl;
 /*
    App Section
 */
@@ -585,6 +581,8 @@ const App = () => {
   //Adjust all getUrl() invocations by passing a page argument.
   const handleSearch = (searchTerm, page) => {
     const url = getUrl(searchTerm, page);
+    currentUrl = url;
+
     console.log("Step 4: Url in HandleSearch URL is = " + url);
     setUrl(url);
     console.log("Step4: Value of stateful URL after update: " + url);

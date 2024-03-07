@@ -9,8 +9,11 @@ Task:
   
    - Extend the API_ENDPOINT with the parameters needed for the 
      paginated fetch.
+
    - Store the page from the result as state after fetching the data.
+
    - Fetch the first page (0) of data with every search.
+
    - Fetch the succeeding page (page + 1) for every additional request 
      triggered with a new HTML button.
 
@@ -411,7 +414,8 @@ const App = () => {
   // A 
   //const handleFetchStories = React.useCallback(() => { // B
   const handleFetchStories = React.useCallback(async() => { // (X1)  
- 
+    console.log("Step 2 - React.useCallback ran. ");
+
     dispatchStories({ type: 'STORIES_FETCH_INIT' });
  
     //fetch(`${API_ENDPOINT}${searchTerm}`)
@@ -420,8 +424,13 @@ const App = () => {
     //replace 'searhTerm' with stateful 'url' 
     try {
       const result = await axios.get(url);
- 
+      const myResult = JSON.stringify(result);
+      console.log("Result of call to axios.get3 = " + myResult);
+
+      console.log("Calling dispatchStories within handleFetchStories to get result.data.hits");
+
       dispatchStories({
+         
         type: 'STORIES_FETCH_SUCCESS',
        // payload: result.data.hits, - modified to handle paging
         payload: {
@@ -435,7 +444,7 @@ const App = () => {
     }
   }, [url]);
        const myDependencyArray = JSON.stringify(url);
-       console.log("dependency array SearchTerm value = " + myDependencyArray);
+       console.log("Url is dependency array of React.useCallback  value of url = " + myDependencyArray);
         //EOF //E - every time 'url' dependency array (E) changes 
                     //useCallback Hook creates a memoized function. As a
                     //result React.useEffect runs again (C) because it depends 
@@ -453,6 +462,7 @@ const App = () => {
   //As a result it runs again the memoized function (C) because it depends
   //on the new function "handleFetchStories" (D)
   React.useEffect(() => { 
+    console.log("Step 1 UseEffect for  handleFetchStories invoked - Step1");
     handleFetchStories(); // C
   }, [handleFetchStories]); // D   (EOF)
 
@@ -739,6 +749,7 @@ const SearchForm = ({
   onSearchInput,
   onSearchSubmit,
 }) => (
+    
   <form onSubmit={onSearchSubmit}>
     <InputWithLabel
       id="search"
@@ -753,6 +764,7 @@ const SearchForm = ({
       Submit
     </button>
   </form>
+  
 );
 
 export default App;

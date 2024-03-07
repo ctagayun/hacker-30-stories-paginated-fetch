@@ -170,7 +170,28 @@ const getUrl = (searchTerm, page) =>
 /*Step 2:
    It's better to extract the search term by extracting everything 
    between ? and &. Also consider that the query parameter is 
-   directly after the ? and all other parameters like page follow it:
+   directly after the ? and all other parameters like page. 
+   
+   With more parameters for the endpoint, it is better to extract
+   the searchTerm every thing between ? and &:
+
+     https://hn.algolia.com/api/v1/search?query=react&page=0
+
+        substring(url.lastIndexOf('?') +1 - WILL EXTRACT "query"
+        urlLastIndexOf('&') - WILL EXTRACT "page"
+
+        THE "query=" NEEDS TO BE REPLACED
+          replace(PARAM_SEARCH, ''
+
+    Essentially, we'll trim the Url string:
+       https://hn.algolia.com/api/v1/search?query=react&page=0 
+
+    Until we leave only the search term ("React" or whatever is the initial value).
+    The result after substring:
+          URL after susbstring:
+            query=react
+          URL after replace
+            react      
 */
 
 const extractSearchTerm = (url) => 
@@ -178,10 +199,17 @@ const extractSearchTerm = (url) =>
     .substring(url.lastIndexOf('?') + 1, urlLastIndexOf('&')) 
     .replace(PARAM_SEARCH, ''); //The key (query=) also needs to 
                 //be replaced, leaving only the value (searchTerm):
-                //Next modify handleFetchStories
+                //Next modify handleFetchStories to deliver us
+                //the page data:
+                //  page: result.data.page,
 
+  //To fetch the next page when a button is clicked, 
+  //we'll need to increment the page argument in this 
+  //new handler:
   const handleMore = () => {
-    const searchTerm = extractSearchTerm(searchTerm);
+    console.log("HandleMore url = " + url);
+    const searchTerm = extractSearchTerm(url);
+    console.log("HandleMore search term = " + searchTerm);
     handleSearch(searchTerm, stories.page + 1);
     console.log("SearchTerm in HandleSearch = " + searchTerm);
   };
@@ -224,8 +252,17 @@ const getAsyncStories = () =>
      isLoading boolean to false and sets the isError boolean 
      to true, while keeping all the the other state intact 
      (e.g. data alias stories)
+
+     A storiesReducer function is where you will put your state 
+     logic. It takes two arguments, the current state and 
+     the action object, and it returns the next state
 */
 const storiesReducer = (state, action) => {
+  console.log("Step 3: Stories Reducer executed");
+  const stateObj= JSON.stringify(state);
+  const actionObj= JSON.stringify(action);
+  console.log("Step 3: State = " + stateObj);
+  console.log("Step 3: Action = " + actionObj);
   switch (action.type) {
     case 'STORIES_FETCH_INIT': //distinct type and payload 
                                //received by dispatchStories 
@@ -245,10 +282,11 @@ const storiesReducer = (state, action) => {
         ...state,
         isLoading: false,
         isError: false,
-      //  data: action.payload - modified to handle paging
+      //data: action.payload - deleted to handle paging
+      //We need to store this data to make paginated fetches later:
         data: action.payload.list,
         page: action.payload.page, //next go to modify React.useReducer()
-      };
+      };                           //add "page" to the initial state object
     case 'STORIES_FETCH_FAILURE':   //another distinct type and payload 
                                     //received by dispatchStories 
                                     //dispatch function 
@@ -289,6 +327,7 @@ const useStorageState = (key, initialState) => {
   return [value, setValue];
 };
 
+let counter = 0;
 /*
    App Section
 */
@@ -322,13 +361,40 @@ const App = () => {
 
    //data: [], isLoading, isError flags hooks merged into one 
    //useReducer hook for a unified state.
-  const [stories, dispatchStories] = React.useReducer( //A
-    storiesReducer,
-    { data: [], page: 0, isLoading: false, isError: false } //We want an empty list data [] 
-                                                   //for the initial state, set isloading=false
-                                                   //is error=false. Add page: property
-                                                   //Next extend the API endpoint with the
-                                                   //new page parameter
+
+   /*
+     The useReducer(reducer, initialState) hook accept 3 arguments:
+        1. Reducer function = storiesReducer()
+
+           A reducer function is where you will put your state 
+           logic. It takes two arguments, the current state and 
+           the action object, and it returns the next state
+
+        2. Initial state =   { data: [], page: 0, isLoading: false, isError: false } //INITIAL STATE
+        3. Initializer function = optional
+
+     The reducer function (storiesReducer) specifies how the state gets 
+     updated. It must be pure, should take the STATE and 
+     ACTION as arguments, and should return the next state
+
+     This hook returns an ARRAY of 2 items
+       - Current state = stories
+       - Dispatch function (is the updater) in this case dispatchStories () 
+         dispatch function only updates the state variable for 
+         the next render.
+        
+     Read: https://react.dev/reference/react/useReducer
+    */
+
+  const [stories, dispatchStories] = React.useReducer( 
+    storiesReducer, //Reducer function
+    { data: [], page: 0, isLoading: false, isError: false } //INITIAL STATE
+            //INITIAL STATE
+            //We want an empty list data [] 
+            //for the initial state, set isloading=false
+            //is error=false. Add page: property
+            //Next extend the API endpoint with the
+            //new page parameter
   );
 
   //(DD) new handler of the button sets the new stateful value 
@@ -338,6 +404,8 @@ const App = () => {
   //  `${API_ENDPOINT}${searchTerm}`
   //);
 
+  //Adjust all getUrl() invocations by passing a page argument.
+  //In this case "0"
   const [url, setUrl] = React.useState([getUrl(searchTerm, 0)]); //next modify handleSearchSubmit
 
   /*   Memoized useEffect
@@ -412,23 +480,20 @@ const App = () => {
   //      because it depends on the new memoized function "handleFetchStories"
 
   // A 
-  //const handleFetchStories = React.useCallback(() => { // B
   const handleFetchStories = React.useCallback(async() => { // (X1)  
-    console.log("Step 2 - React.useCallback ran. ");
+    console.log("Step 2 - Executing  React.useCallback from handleFetchStories  Step2  . ");
 
+    //Call dispatchStories() updater  for "type: 'STORIES_FETCH_INIT' in handleFetchStories"
     dispatchStories({ type: 'STORIES_FETCH_INIT' });
- 
-    //fetch(`${API_ENDPOINT}${searchTerm}`)
-    //fetch(url) //DD use the stateful 'url'
-    //axios(url) //DD use the stateful 'url'
-    //replace 'searhTerm' with stateful 'url' 
+    
+    //Replace 'searchTerm' with 'url' state 
     try {
       const result = await axios.get(url);
       const myResult = JSON.stringify(result);
-      console.log("Result of call to axios.get3 = " + myResult);
-
-      console.log("Calling dispatchStories within handleFetchStories to get result.data.hits");
-
+      console.log("Result of call to axios.get from Step2 handleFetchStories = " + myResult);
+      console.log("Calling dispatchStories from Step2 handleFetchStories to get result.data.hits");
+      
+      //Call dispatchStories() updater  for "type: 'STORIES_FETCH_SUCCESS' in handleFetchStories"
       dispatchStories({
          
         type: 'STORIES_FETCH_SUCCESS',
@@ -442,27 +507,30 @@ const App = () => {
     } catch {
       dispatchStories({ type: 'STORIES_FETCH_FAILURE' });
     }
-  }, [url]);
-       const myDependencyArray = JSON.stringify(url);
-       console.log("Url is dependency array of React.useCallback  value of url = " + myDependencyArray);
-        //EOF //E - every time 'url' dependency array (E) changes 
-                    //useCallback Hook creates a memoized function. As a
-                    //result React.useEffect runs again (C) because it depends 
-                    //on the new function (D)
+  }, [url]); //EOF
 
-                    //React's useCallback hook changes the function only 
-                    //when one of its values in the dependency array (E) changes. 
-                    //That's when we want to trigger a re-fetch of the data, 
-                    //because the input field has new input and we want to see 
-                    //the new data displayed in our list.
-                    //Note: the dependency array contains the stuff we type in 
-                    //the input field
+  const myDependencyArray = JSON.stringify(url);
+  console.log("Url is dependency array of React.useCallback  value of url = " + myDependencyArray);
+   /*  - every time 'url' dependency array (E) changes 
+           useCallback Hook creates a memoized function. As a
+           result React.useEffect runs again (C) because it depends 
+           on the new function (D)
+
+           React's useCallback hook changes the function only 
+           when one of its values in the dependency array (E) changes. 
+           That's when we want to trigger a re-fetch of the data, 
+           because the input field has new input and we want to see 
+           the new data displayed in our list.
+           Note: the dependency array contains the stuff we type in 
+           the input field */
 
   //useEffect executes every time [searchTerm] dependency array (E) changes.
   //As a result it runs again the memoized function (C) because it depends
   //on the new function "handleFetchStories" (D)
+
   React.useEffect(() => { 
-    console.log("Step 1 UseEffect for  handleFetchStories invoked - Step1");
+    counter = counter + 1;
+    console.log("Step 1 UseEffect for  handleFetchStories invoked = " + counter);
     handleFetchStories(); // C
   }, [handleFetchStories]); // D   (EOF)
 
@@ -503,6 +571,7 @@ const App = () => {
   //const handleSearchSubmit = (event) => {
   //  setUrl(`${API_ENDPOINT}${searchTerm}`);
 
+  //Adjust all getUrl() invocations by passing a page argument.
   const handleSearchSubmit = (event) => {
     handleSearch(searchTerm, 0);
 
@@ -513,10 +582,12 @@ const App = () => {
     event.preventDefault();
   };
 
+  //Adjust all getUrl() invocations by passing a page argument.
   const handleSearch = (searchTerm, page) => {
     const url = getUrl(searchTerm, page);
-    console.log("Url in HandleSearch = " + url);
+    console.log("Step 4: Url in HandleSearch URL is = " + url);
     setUrl(url);
+    console.log("Step4: Value of stateful URL after update: " + url);
   };
   
    return (

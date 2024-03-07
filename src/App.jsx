@@ -194,19 +194,25 @@ const getUrl = (searchTerm, page) =>
             react      
 */
 
-const extractSearchTerm = (url) => url
-    .substring(url.lastIndexOf('?') + 1, urlLastIndexOf('&')) 
-    .replace(PARAM_SEARCH, '');  
+const extractSearchTerm = (url) =>
+url
+.substring(url.lastIndexOf('?') + 1, url.lastIndexOf('&'))
+.replace(PARAM_SEARCH, '');
     
   //To fetch the next page when a button is clicked, 
   //we'll need to increment the page argument in this 
   //new handler:
   const handleMore = () => {
-    console.log("HandleMore url = " + currentUrl);
+    console.log("Step 5: HandleMore currentUrl = " + currentUrl);
+
     const searchTerm = extractSearchTerm(currentUrl);
-    console.log("HandleMore extracted search term = " + searchTerm);
+
+    console.log("Step 5: HandleMore extracted search term = " + searchTerm);
+   
     handleSearch(searchTerm, stories.page + 1);
-    console.log("SearchTerm in HandleSearch = " + searchTerm);
+
+    console.log("Step 5: Value of stories.page = " + stories.page);
+    console.log("Step 5: SearchTerm in HandleSearch = " + searchTerm);
   };
  
     
@@ -324,6 +330,7 @@ const useStorageState = (key, initialState) => {
 
 let counter = 0;
 let currentUrl;
+
 /*
    App Section
 */
@@ -530,7 +537,16 @@ const App = () => {
     handleFetchStories(); // C
   }, [handleFetchStories]); // D   (EOF)
 
-  
+  //Adjust all getUrl() invocations by passing a page argument.
+  const handleSearch = (searchTerm, page) => {
+    const url = getUrl(searchTerm, page);
+    currentUrl = url;
+
+    console.log("Step 4: Url in HandleSearch URL is = " + url);
+    setUrl(url);
+    console.log("Step4: Value of stateful URL after update: " + url);
+    console.log("Step 4: Value of currentUrl = " + currentUrl );
+  };
   const handleRemoveStory = (item) => {
     dispatchStories({
       type: 'REMOVE_STORY',
@@ -547,6 +563,7 @@ const App = () => {
     setSearchTerm(event.target.value);
   };
 
+ 
   //(CC) create new handler for the button.
   //While the renamed handler of the input field still sets 
   //the stateful searchTerm ... the new handler of the button 
@@ -578,15 +595,7 @@ const App = () => {
     event.preventDefault();
   };
 
-  //Adjust all getUrl() invocations by passing a page argument.
-  const handleSearch = (searchTerm, page) => {
-    const url = getUrl(searchTerm, page);
-    currentUrl = url;
-
-    console.log("Step 4: Url in HandleSearch URL is = " + url);
-    setUrl(url);
-    console.log("Step4: Value of stateful URL after update: " + url);
-  };
+  
   
    return (
     <div>

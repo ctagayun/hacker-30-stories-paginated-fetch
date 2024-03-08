@@ -195,7 +195,7 @@ const getUrl = (searchTerm, page) =>
 */
 
 const extractSearchTerm = (lastUrl) =>
-  lastUrl
+lastUrl
     .substring(lastUrl.lastIndexOf('?') + 1, lastUrl.lastIndexOf('&'))
     .replace(PARAM_SEARCH, '');
     
@@ -264,6 +264,7 @@ const storiesReducer = (state, action) => {
   const actionObj= JSON.stringify(action);
   console.log("Step 3: State = " + stateObj);
   console.log("Step 3: Action = " + actionObj);
+
   switch (action.type) {
     case 'STORIES_FETCH_INIT': //distinct type and payload 
                                //received by dispatchStories 
@@ -301,14 +302,11 @@ const storiesReducer = (state, action) => {
         isLoading: false,
         isError: true,
       };
-    case 'REMOVE_STORY':              //another distinct type and payload 
-                                      //received by dispatchStories 
-                                      //dispatch function
-                                      //so we need to add it here
-                                  //Observe how the REMOVE_STORY action 
-                                  //changed as well. It operates on the 
-                                  //state.data, and no longer just on the
-                                  // plain "state".
+    case 'REMOVE_STORY':                
+                        //Observe how the REMOVE_STORY action 
+                        //changed as well. It operates on the 
+                        //state.data, and no longer just on the
+                        // plain "state".
       return {
         ...state,
         data: state.data.filter(  //now operate on state.data not just "state"

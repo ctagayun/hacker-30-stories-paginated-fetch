@@ -194,10 +194,10 @@ const getUrl = (searchTerm, page) =>
             react      
 */
 
-const extractSearchTerm = (url) =>
-url
-.substring(url.lastIndexOf('?') + 1, url.lastIndexOf('&'))
-.replace(PARAM_SEARCH, '');
+const extractSearchTerm = (lastUrl) =>
+  lastUrl
+    .substring(lastUrl.lastIndexOf('?') + 1, lastUrl.lastIndexOf('&'))
+    .replace(PARAM_SEARCH, '');
     
   //To fetch the next page when a button is clicked, 
   //we'll need to increment the page argument in this 
@@ -285,10 +285,14 @@ const storiesReducer = (state, action) => {
         isError: false,
       //data: action.payload - deleted to handle paging
       //We need to store this data to make paginated fetches later:
-        data: action.payload.list,
+        data: 
+        action.payload.page === 0 //concatenate the paginated list
+        ? action.payload.list
+        : state.data.concat(action.payload.list),
         page: action.payload.page, //next go to modify React.useReducer()
       };                           //add "page" to the initial state object
-    case 'STORIES_FETCH_FAILURE':   //another distinct type and payload 
+    
+      case 'STORIES_FETCH_FAILURE':   //another distinct type and payload 
                                     //received by dispatchStories 
                                     //dispatch function 
                                     //so we need to add it here

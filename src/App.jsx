@@ -161,6 +161,9 @@ const API_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
 const PARAM_PAGE = 'page=';
 
+let counter = 0;
+let currentUrl = "";
+
 //Let us compose the the URL. 
 //Careful: notice the ? in between
 //Next adjust all getUrl invocations by passing the page argument
@@ -199,21 +202,6 @@ lastUrl
     .substring(lastUrl.lastIndexOf('?') + 1, lastUrl.lastIndexOf('&'))
     .replace(PARAM_SEARCH, '');
     
-  //To fetch the next page when a button is clicked, 
-  //we'll need to increment the page argument in this 
-  //new handler:
-  const handleMore = () => {
-    console.log("Step 5: HandleMore currentUrl = " + currentUrl);
-
-    const searchTerm = extractSearchTerm(currentUrl);
-
-    console.log("Step 5: HandleMore extracted search term = " + searchTerm);
-   
-    handleSearch(searchTerm, stories.page + 1);
-
-    console.log("Step 5: Value of stories.page = " + stories.page);
-    console.log("Step 5: SearchTerm in HandleSearch = " + searchTerm);
-  };
  
     
 /* No need for this because we will fetch data directly using the API
@@ -330,8 +318,6 @@ const useStorageState = (key, initialState) => {
   return [value, setValue];
 };
 
-let counter = 0;
-let currentUrl;
 
 /*
    App Section
@@ -391,6 +377,10 @@ const App = () => {
      Read: https://react.dev/reference/react/useReducer
     */
 
+  //Adjust all getUrl() invocations by passing a page argument.
+  //In this case "0"
+  const [url, setUrl] = React.useState([getUrl(searchTerm, 0)]); //next modify handleSearchSubmit
+     
   const [stories, dispatchStories] = React.useReducer( 
     storiesReducer, //Reducer function
     { data: [], page: 0, isLoading: false, isError: false } //INITIAL STATE
@@ -402,16 +392,6 @@ const App = () => {
             //new page parameter
   );
 
-  //(DD) new handler of the button sets the new stateful value 
-  //called 'url' which is derived from the current searchTerm and 
-  //the static API endpoint as a new state:
-  //const [url, setUrl] = React.useState(
-  //  `${API_ENDPOINT}${searchTerm}`
-  //);
-
-  //Adjust all getUrl() invocations by passing a page argument.
-  //In this case "0"
-  const [url, setUrl] = React.useState([getUrl(searchTerm, 0)]); //next modify handleSearchSubmit
 
   /*   Memoized useEffect
     After merging the three useState hooks into one Reducer hook,
@@ -485,20 +465,20 @@ const App = () => {
   //      because it depends on the new memoized function "handleFetchStories"
 
   // A 
-  const handleFetchStories = React.useCallback(async() => { // (X1)  
+  const handleFetchStories = React.useCallback(async() => {    
     console.log("Step 2 - Executing  React.useCallback from handleFetchStories  Step2  . ");
 
-    //Call dispatchStories() updater  for "type: 'STORIES_FETCH_INIT' in handleFetchStories"
     dispatchStories({ type: 'STORIES_FETCH_INIT' });
     
-    //Replace 'searchTerm' with 'url' state 
+    //'url' is the state 
     try {
       const result = await axios.get(url);
       const myResult = JSON.stringify(result);
       console.log("Result of call to axios.get from Step2 handleFetchStories = " + myResult);
       console.log("Calling dispatchStories from Step2 handleFetchStories to get result.data.hits");
       
-      //Call dispatchStories() updater  for "type: 'STORIES_FETCH_SUCCESS' in handleFetchStories"
+      //Call dispatchStories() updater  for "type: 'STORIES_FETCH_SUCCESS' 
+      //in handleFetchStories"
       dispatchStories({
          
         type: 'STORIES_FETCH_SUCCESS',
@@ -512,7 +492,7 @@ const App = () => {
     } catch {
       dispatchStories({ type: 'STORIES_FETCH_FAILURE' });
     }
-  }, [url]); //EOF
+  }, [url]); //handleFetchStories EOF
 
   const myDependencyArray = JSON.stringify(url);
   console.log("Url is dependency array of React.useCallback  value of url = " + myDependencyArray);
@@ -529,15 +509,30 @@ const App = () => {
            Note: the dependency array contains the stuff we type in 
            the input field */
 
-  //useEffect executes every time [searchTerm] dependency array (E) changes.
-  //As a result it runs again the memoized function (C) because it depends
-  //on the new function "handleFetchStories" (D)
+  /*useEffect executes every time [searchTerm] dependency array (E) changes.
+    As a result it runs again the memoized function (C) because it depends
+    on the new function "handleFetchStories" (D) 
+  */
 
   React.useEffect(() => { 
     counter = counter + 1;
     console.log("Step 1 UseEffect for  handleFetchStories invoked = " + counter);
     handleFetchStories(); // C
   }, [handleFetchStories]); // D   (EOF)
+
+  const handleRemoveStory = (item) => {
+    dispatchStories({
+      type: 'REMOVE_STORY',
+      payload: item,
+    });
+  };  //EOF handleRemoveStory
+
+   //(BB) rename handler handleSearch to handleSearchInput
+  ///renamed handler of the input field still sets 
+  //the stateful searchTerm,
+  const handleSearchInput = (event) => {
+    setSearchTerm(event.target.value);
+  };
 
   //Adjust all getUrl() invocations by passing a page argument.
   const handleSearch = (searchTerm, page) => {
@@ -549,24 +544,8 @@ const App = () => {
     console.log("Step4: Value of stateful URL after update: " + url);
     console.log("Step 4: Value of currentUrl = " + currentUrl );
   };
-  const handleRemoveStory = (item) => {
-    dispatchStories({
-      type: 'REMOVE_STORY',
-      payload: item,
-    });
-  };  //EOF handleRemoveStory
-
- 
- 
-  //(BB) rename handler handleSearch to handleSearchInput
-  ///renamed handler of the input field still sets 
-  //the stateful searchTerm,
-  const handleSearchInput = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
- 
-  //(CC) create new handler for the button.
+  
+  /*(CC) create new handler for the button.
   //While the renamed handler of the input field still sets 
   //the stateful searchTerm ... the new handler of the button 
   //sets the new stateful value called 'url' which is derived 
@@ -580,7 +559,8 @@ const App = () => {
   //Instead of passing the handleSearchSubmit() handler to the button
   //which is setUrl(`${API_ENDPOINT}${searchTerm}`); the button receives
   //a new type attribute called submit which means the "onSubmit" handles
-  //the click and not the button.
+  //the click and not the button. 
+  */
 
   //orig
   //const handleSearchSubmit = (event) => {
@@ -596,9 +576,24 @@ const App = () => {
     //behavior which would lead to a browser reload:
     event.preventDefault();
   };
+  
+  //To fetch the next page when a button is clicked, 
+  //we'll need to increment the page argument in this 
+  //new handler:
+  const handleMore = () => {
+    console.log("Step 5: HandleMore currentUrl = " + currentUrl);
 
-  
-  
+    const searchTerm = extractSearchTerm(currentUrl);
+
+    console.log("Step 5: HandleMore extracted search term = " + searchTerm);
+    
+    //"stories" is the state returned by React.useReducer
+    handleSearch(searchTerm, stories.page + 1);
+    console.log("Step 5: Value of stories.page = " + stories.page);
+    console.log("Step 5: SearchTerm in HandleSearch = " + searchTerm);
+  };
+
+   
    return (
     <div>
       <h1>My Hacker Stories</h1>

@@ -624,21 +624,15 @@ const App = () => {
 
       {stories.isError && <p>Something went wrong ...</p>}
 
+      <List list={stories.data}  onRemoveItem={handleRemoveStory}   />
+    
       {stories.isLoading ? (
         <p>Loading ...</p>
       ) : (
-        <List
-          //list={searchedStories} //First, remove searchedStories because we will 
-                                   //receive the stories filtered by search term 
-                                   //from the API. Pass only the regular stories 
-                                   //to the List component:
-          list={stories.data}
-          onRemoveItem={handleRemoveStory}
-        />
+        <button type="button" onClick={handleMore}>
+           More
+        </button>
       )}
-      <button type="button" onClick={handleMore}>
-        More
-      </button>
     </div>
   );
 };
